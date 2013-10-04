@@ -1,0 +1,9 @@
+extends layout
+
+block content
+
+  h1 Pictures
+  each url in urls
+    div.photo
+      img(src=url)
+      p.tag Nate &amp; Mia October 5th, 2013

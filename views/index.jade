@@ -1,0 +1,319 @@
+extends layout
+
+block head
+    link(href='http://fonts.googleapis.com/css?family=Dawning+of+a+New+Day', rel='stylesheet', type='text/css')
+    script(src='/components/blueimp-canvas-to-blob/js/canvas-to-blob.min.js')
+    script(src='/js/glfx.js')
+    script(src='/js/gif.js')
+    script(src="/socket.io/socket.io.js")
+
+block content
+    style.
+        html, body {
+          overflow: hidden;
+          margin: 0;
+          padding: 0;
+            color: #ccc;
+            background: #000;
+        }
+        article {
+          text-align: center;
+        }
+        #monitor {
+          display: none;
+        }
+        a.type {
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+    article
+        div#frame
+        video#monitor(autoplay)
+        div#splash
+        p#errorMessage
+        //- button(onclick="makePng()") Snapshot
+        //- button(onclick="makeGif()") GIF
+        //- a.type(href="#frame") Frame
+        //- a.type(href="#blackAndWhite") Black &amp; White
+        //- a.type(href="#contrast") Pop
+        //- a.type(href="#damp") Damp
+        //- a.type(href="#zoom") Zoom Blur
+        //- a.type(href="#narrow") Narrow
+        //- a.type(href="#soft") Soft
+        //- a.type(href="#bulge") Bulge
+        //- a.type(href="#noise") Noise
+        //- a.type(href="#hex") Hex
+        //- a.type(href="#dots") Dots
+        //- a.type(href="#comic") Comic
+        //- br
+        //- a.type(href="#sweet") Sweet
+        //- a.type(href="#vintage") Old
+        //- a.type(href="#bizarre") Bizarre
+        //- a.type(href="#cell") Cell
+        //- a.type(href="#monster") Monster
+        //- a.type(href="#clear") Clear
+        div#message
+        div#settings
+        div#gallery
+    canvas(id="photo",style="display:none")
+    script.
+        navigator.getUserMedia = navigator.webkitGetUserMedia || navigator.getUserMedia;
+        window.URL = window.URL || window.webkitURL;
+
+        var video = document.getElementById('monitor');
+        var canvas = document.getElementById('photo');
+        var gallery = document.getElementById('gallery');
+        var settings = document.getElementById('settings');
+        var glcanvas;
+        var captureNextFrame = false;
+        var xmid = 320, ymid = 239;
+        var gif = false, jpeg = false;
+        var frameRate = 100, captureRate = 100, captureLength = 5000, gifDelay = 50;
+
+        var options = {
+            blackAndWhite: ['hueSaturation', [0, -1]],
+            highContrast: ['brightnessContrast', [0, 0.5]],
+            contrast: ['brightnessContrast', [.5, 0.25]],
+            frame: ['vignette', [0.4, 0.7]],
+            zoom: ['zoomBlur', [xmid, ymid, 0.2]],
+            damp: ['vibrance', [-1]],
+            narrow: ['tiltShift', [143, 362.25, 508, 171.390625, 13, 276]],
+            soft: ['lensBlur', [15, -1, 0]],
+            noise: ['noise', [.25]],
+            hex: ['hexagonalPixelate', [xmid, ymid, 20]],
+            dots: ['dotScreen', [xmid, ymid, 1.1, 5.52]],
+            comic: ['colorHalftone', [xmid, ymid, .25, 4]],
+            bulge: ['bulgePinch', [xmid, ymid, 192, 0.67]]
+        };
+
+        var combos = {
+            vintage: ['blackAndWhite','narrow','contrast','frame'],
+            sweet: ['damp','narrow','frame'],
+            cell: ['soft'],
+            bug: ['bulge'],
+            dot: ['dots'],
+            bizarre: ['comic', 'soft'],
+            monster: ['blackAndWhite', 'soft', 'contrast'],
+            clear: []
+        };
+
+        var selected = [];
+
+        $("a.type").click(function() {
+            var $this = $(this);
+            toggleFx($this.attr("href").substring(1));
+        });
+
+        var $message = $("#message");
+        $message.hide();
+        function show(message, autoClose) {
+          $message.show().html(message);
+          if (!autoClose) return;
+          hide(3000);
+        }
+        function hide(delay) {
+          setTimeout(function() {
+            $message.hide();
+          }, delay || 0);
+        }
+
+        function toggleFx(type) {
+            if (!options[type] && !combos[type]) return;
+
+            if (combos[type]) {
+                selected = [];
+                socket.emit("status", selected);
+                return combos[type].forEach(function(i) {
+                    toggleFx(i);
+                });
+            }
+
+            var i = selected.indexOf(type);
+            if (i === -1) {
+                selected.push(type);
+            } else {
+                delete selected[i];
+                selected = selected.filter(function(e) { return !!e; });
+            }
+
+            socket.emit("status", selected);
+            drawStatus();
+        }
+
+        function drawStatus() {
+            //- $(settings).empty();
+            //- selected.forEach(function(s) {
+            //-     $(settings).append('<span>' + s + '</span>');
+            //- });
+        }
+
+        function gotStream(stream) {
+          if (window.URL) {
+            video.src = window.URL.createObjectURL(stream);
+          } else {
+            video.src = stream; // Opera.
+          }
+
+          video.onerror = function(e) {
+            stream.stop();
+          };
+
+          stream.onended = noStream;
+
+          //- video.onloadedmetadata = function(e) { // Not firing in Chrome. See crbug.com/110938.
+          //-   document.getElementById('splash').hidden = true;
+          //- };
+
+          // Since video.onloadedmetadata isn't firing for getUserMedia video, we have
+          // to fake it.
+          setTimeout(function() {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            document.getElementById('splash').hidden = true;
+            gl();
+          }, 100);
+        }
+
+        function noStream(e) {
+          var msg = 'No camera available.  Please Refresh the Page!';
+          if (e.code == 1) {
+            msg = 'User denied access to use camera.  Please Refresh the Page and Accept Access!';
+          }
+          document.getElementById('errorMessage').textContent = msg;
+        }
+
+        function capture() {
+            captureNextFrame = true;
+        }
+        function _capture() {
+            //- var img = document.createElement('img');
+            //- img.src = glcanvas.toDataURL('image/png');
+            //- $(img).css({
+            //-     height: '96px',
+            //-     width: '128px'
+            //- });
+            //- $('body').append(img);
+
+            // capture gif frame or jpeg
+            if (gif) {
+                gif.addFrame(glcanvas, {copy: true, delay: gifDelay});
+            } else {
+                glcanvas.toBlob(function(blob, data) {
+                    jpeg = blob;
+                }, 'image/jpeg');
+            }
+
+            return glcanvas;
+        }
+
+        function countdown(callback) {
+            setTimeout(function() { show(3); }, 1000);
+            setTimeout(function() { show(2); }, 2000);
+            setTimeout(function() { show(1); }, 3000);
+            setTimeout(function() { hide(10); callback(); }, 4000);
+        }
+
+        function makePng() {
+          countdown(function() {
+              capture();
+              // timing needed to capture frames correctly
+              setTimeout(function() {
+                  upload(jpeg);
+              }, 200);
+          });
+        }
+
+        function makeGif() {
+
+            countdown(function() {
+              gif = new GIF({
+                workers: 4,
+                quality: 10,
+                workerScript: '/js/gif.worker.js'
+              });
+
+              gif.on('finished', function(blob, data) {
+                upload(blob);
+              });
+
+              var interval = setInterval(function() {
+                  capture();
+              }, captureRate);
+
+              setTimeout(function() {
+                  show("Rendering...");
+                  clearInterval(interval);
+                  gif.render();
+                  gif = false;
+              }, captureLength);
+            });
+        }
+
+        function upload(blobOrFile) {
+          show("Uploading...");
+          var xhr = new XMLHttpRequest();
+          xhr.open('POST', '/repo', true);
+          xhr.onload = function(e) {
+            show("Upload Done!");
+            hide(3000);
+          };
+
+          //- xhr.upload.onprogress = function(e) {
+          //-   console.log(e.loaded / e.total);
+          //- };
+
+          xhr.send(blobOrFile);
+        }
+
+        function init() {
+          if (!navigator.getUserMedia) {
+            document.getElementById('errorMessage').innerHTML = 'Sorry. <code>navigator.getUserMedia()</code> is not available.';
+            return;
+          }
+          navigator.getUserMedia({video: true}, gotStream, noStream);
+        }
+
+        function gl() {
+            glcanvas = fx.canvas();
+            var texture = glcanvas.texture(video);
+
+            setInterval(function() {
+                texture.loadContentsOf(video);
+                var c = glcanvas.draw(texture);
+
+                for (var i in selected) {
+                    var o = options[selected[i]];
+                    c[o[0]].apply(c, o[1]);
+                }
+
+                c.update();
+
+                if (captureNextFrame === true) {
+                    captureNextFrame = false;
+                    _capture();
+                }
+            }, frameRate);
+
+            $('#frame').append(glcanvas);
+        }
+
+        window.addEventListener('keydown', function(e) {
+          if (e.keyCode == 27) { // ESC
+            document.querySelector('details').open = false;
+          }
+        }, false);
+
+        var socket = io.connect('/');
+        socket.on('action', function (data) {
+          if (data === 'photo') {
+            makePng();
+          } else if (data === 'gif') {
+            makeGif();
+          }
+        });
+        socket.on('type', function (data) {
+          toggleFx(data);
+        });
+
+        init();

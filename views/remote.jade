@@ -1,0 +1,84 @@
+extends layout
+
+block head
+  script(src="/socket.io/socket.io.js")
+  style.
+    html, body {
+      color: #fff;
+      background: #111;}
+    a {
+      color: #fff;
+      border: solid 1px #000;
+      text-decoration: none;
+      background: #333;
+      margin: 20px 50px;
+      padding: 10px;
+      border-radius: 10px;
+      text-align: center;
+      font-size: 24px;
+      display: block;
+      letter-spacing: 2px;}
+    a.action {
+      background: darkred;}
+    a.selected {
+      background: #666;}
+    h1 {
+      margin-top: 10px;
+      text-align: center;}
+
+
+block content
+
+  h1 Pick a Style
+
+  div.options
+    a.type#cell(href="#cell") Softy
+    a.type#sweet(href="#sweet") Sweet
+    a.type#old(href="#vintage") Black and White
+    a.type#bug(href="#bug") Bug
+    //- a.type#bizarre(href="#bizarre") Bizarre
+    a.type#dot(href="#dot") Dots
+    a.type#monster(href="#monster") Monster
+    a.type#clear(href="#clear", style="background:#444;") Clear
+
+  //- h1 Add Ons
+
+  //- div.options
+  //-   a.type#frame(href="#frame") Frame
+  //-   a.type#blackAndWhite(href="#blackAndWhite") Black &amp; White
+  //-   a.type#soft(href="#soft") Soft
+  //-   a.type#dots(href="#dots") Dots
+  //-   a.type#comic(href="#comic") Comic
+  //-   a.type#bulge(href="#bulge") Bulge
+
+  h1 Take the Shot
+
+  div.snap
+    a.action(href="#photo") Take Snapshot!
+    a.action(href="#gif") Animate Me!
+
+  script.
+    var socket = io.connect('/');
+
+    // websocket to server... could also just get away with ajax
+    $('a.type').click(function(e) {
+      e.preventDefault();
+      var type = $(this).attr('href').substring(1);
+      //- $(this).addClass("selected");
+      socket.emit('type', type);
+    });
+
+    $('a.action').click(function(e) {
+      e.preventDefault();
+      var action = $(this).attr('href').substring(1);
+      socket.emit('action', action);
+    });
+
+    socket.on('status', drawStatus);
+
+    function drawStatus(status) {
+      $("a").removeClass("selected");
+      status.forEach(function(s) {
+        $("#" + s).addClass("selected");
+      });
+    }
