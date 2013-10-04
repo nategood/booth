@@ -1,0 +1,38 @@
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+html, body {
+  background: #222; }
+.photo {
+  border: solid 20px #fff;
+  display: inline-block;
+  /*float: left;*/
+  margin: auto;
+  background: #fff;
+  text-align: center;
+  margin-bottom: 50px;
+  box-shadow: 5px 5px 25px #000;}
+
+.tag {
+    font-size: 24px;
+}
+
+#message {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    background: #fff;
+    padding: 50px;
+    /*width: 100px;*/
+    margin-left: -75px;
+    margin-top: -75px;
+    border: solid 1px #333;
+    color: #333;
+    font-size: 32px;
+    border-radius: 10px;
+}
