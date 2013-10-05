@@ -1,8 +1,3 @@
-
-/**
- * Module dependencies.
- */
-
 var express = require('express')
   , routes = require('./routes')
   , http = require('http')
@@ -32,6 +27,7 @@ app.get('/', routes.index);
 app.get('/remote', routes.remote);
 app.get('/photos', routes.photos);
 app.get('/photo', routes.photo);
+app.get('/rand', routes.rand);
 app.post('/repo', routes.repo);
 
 server = http.createServer(app);

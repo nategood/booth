@@ -23,6 +23,13 @@ exports.photo = function(req, res) {
   });
 };
 
+exports.rand = function(req, res) {
+  getUrls(function(err, urls) {
+    var url = urls[Math.floor(Math.random() * urls.length)];
+    res.render('photo', {url: url});
+  });
+};
+
 exports.repo = function(req, res) {
   var ext = req.get('Content-Type').indexOf('gif') !== -1 ? '.gif' : '.jpg';
   var p = path.join(dir, (new Date()).getTime() + ext);

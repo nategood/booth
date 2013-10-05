@@ -22,37 +22,45 @@ block content
         #monitor {
           display: none;
         }
-        a.type {
-            text-decoration: none;
-            margin: 0 10px;
-        }
+        html, body {
+          color: #fff;
+          background: #111;}
+        a {
+          color: #fff;
+          border: solid 1px #000;
+          text-decoration: none;
+          background: #333;
+          margin: 20px 50px;
+          padding: 10px;
+          border-radius: 10px;
+          text-align: center;
+          font-size: 16px;
+          display: inline-block;
+          letter-spacing: 2px;}
+        a.action {
+          background: darkred;}
+        a.selected {
+          background: #666;}
+        h1 {
+          margin-top: 10px;
+          text-align: center;}
 
     article
         div#frame
         video#monitor(autoplay)
         div#splash
         p#errorMessage
-        //- button(onclick="makePng()") Snapshot
-        //- button(onclick="makeGif()") GIF
-        //- a.type(href="#frame") Frame
-        //- a.type(href="#blackAndWhite") Black &amp; White
-        //- a.type(href="#contrast") Pop
-        //- a.type(href="#damp") Damp
-        //- a.type(href="#zoom") Zoom Blur
-        //- a.type(href="#narrow") Narrow
-        //- a.type(href="#soft") Soft
-        //- a.type(href="#bulge") Bulge
-        //- a.type(href="#noise") Noise
-        //- a.type(href="#hex") Hex
-        //- a.type(href="#dots") Dots
-        //- a.type(href="#comic") Comic
-        //- br
-        //- a.type(href="#sweet") Sweet
-        //- a.type(href="#vintage") Old
-        //- a.type(href="#bizarre") Bizarre
-        //- a.type(href="#cell") Cell
-        //- a.type(href="#monster") Monster
-        //- a.type(href="#clear") Clear
+        h1 Pick a Style
+        a.type#cell(href="#cell") Softy
+        a.type#sweet(href="#sweet") Sweet
+        a.type#old(href="#vintage") Black and White
+        a.type#bug(href="#bug") Bug
+        a.type#dot(href="#dot") Dots
+        a.type#monster(href="#monster") Monster
+        a.type#clear(href="#clear", style="background:#444;") Clear
+        h1 Take the Shot
+        a.action(href="#photo", onclick="makePng()") Take Snapshot!
+        a.action(href="#gif", onclick="makeGif()") Animate Me!
         div#message
         div#settings
         div#gallery
@@ -126,6 +134,7 @@ block content
                 socket.emit("status", selected);
                 return combos[type].forEach(function(i) {
                     toggleFx(i);
+
                 });
             }
 
@@ -138,15 +147,15 @@ block content
             }
 
             socket.emit("status", selected);
-            drawStatus();
+            //- drawStatus();
         }
 
-        function drawStatus() {
-            //- $(settings).empty();
-            //- selected.forEach(function(s) {
-            //-     $(settings).append('<span>' + s + '</span>');
-            //- });
-        }
+        //- function drawStatus() {
+        //-     //- $(settings).empty();
+        //-     //- selected.forEach(function(s) {
+        //-     //-     $(settings).append('<span>' + s + '</span>');
+        //-     //- });
+        //- }
 
         function gotStream(stream) {
           if (window.URL) {
